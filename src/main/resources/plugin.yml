@@ -7,8 +7,3 @@ commands:
   login-tp:
     description: Basic command.
     permission: server.admin
-
-permissions:
-  server.admin:
-    description: Basic permission.
-    default: op

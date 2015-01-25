@@ -73,8 +73,7 @@ public class LoginTeleport extends JavaPlugin {
 	public class Commander implements CommandExecutor {
 
 		public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-			boolean isPlayer = sender instanceof Player && sender.hasPermission("server.admin");
-			if (isPlayer) {
+			if (sender instanceof Player && sender.isOp()) {
 				Location location = getServer().getPlayer(sender.getName()).getLocation();
 				JsonArray array = new JsonArray();
 				Gson gson = new Gson();
