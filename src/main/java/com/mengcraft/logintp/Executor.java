@@ -72,7 +72,9 @@ public class Executor implements CommandExecutor, Listener {
                 while (!where.getChunk().isLoaded()) {
                     where.getChunk().load();
                 }
-                // And teleport who.
+                // Force down vehicle.
+                if (player.getVehicle() != null) player.getVehicle().eject();
+                // And teleport the man.
                 player.teleport(where);
             } catch (Exception e) {
                 main.getLogger().warning(e.toString());
