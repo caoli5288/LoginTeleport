@@ -1,9 +1,9 @@
-main: com.mengcraft.bukkit.LoginTeleport
+main: com.mengcraft.logintp.Main
 name: LoginTeleport
-version: ${project.version}
+version: 0.3.1
 website: http://www.mengcraft.com/
 
 commands:
   login-tp:
-    description: Basic command.
+    description: None.
     permission: server.admin
