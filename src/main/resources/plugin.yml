@@ -1,9 +1,9 @@
 main: com.mengcraft.logintp.Main
 name: LoginTeleport
-version: 0.3.1
+version: 0.3.2
 website: http://www.mengcraft.com/
 
 commands:
   login-tp:
     description: None.
-    permission: server.admin
+    permission: logintp.admin

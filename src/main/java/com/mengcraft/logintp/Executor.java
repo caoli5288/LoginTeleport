@@ -56,9 +56,11 @@ public class Executor implements CommandExecutor, Listener {
 
     @EventHandler
     public void handle(PlayerJoinEvent event) {
-        main.getServer()
-            .getScheduler()
-            .runTaskLater(main, new Teleport(event.getPlayer()), 1);
+        if (!event.getPlayer().hasPermission("logintp.bypass")) {
+            main.getServer()
+                .getScheduler()
+                .runTask(main, new Teleport(event.getPlayer()));
+        }
     }
 
     private class Teleport implements Runnable {
