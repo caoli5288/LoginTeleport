@@ -58,8 +58,8 @@ public class Executor implements CommandExecutor, Listener {
     public void handle(PlayerJoinEvent event) {
         if (!event.getPlayer().hasPermission("logintp.bypass")) {
             main.getServer()
-                .getScheduler()
-                .runTask(main, new Teleport(event.getPlayer()));
+                    .getScheduler()
+                    .runTask(main, new Teleport(event.getPlayer()));
         }
     }
 
@@ -102,8 +102,8 @@ public class Executor implements CommandExecutor, Listener {
             where.setX((double) it.next());
             where.setY((double) it.next());
             where.setZ((double) it.next());
-            where.setYaw(new Float((double) it.next()));
-            where.setPitch(new Float((double) it.next()));
+            where.setYaw((float) (double) it.next());
+            where.setPitch((float) (double) it.next());
         } catch (ParseException e) {
             throw new RuntimeException(e);
         }
