@@ -1,6 +1,6 @@
 package com.mengcraft.logintp;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -18,102 +18,192 @@ import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
-@SuppressWarnings("rawtypes")
 public class Executor implements CommandExecutor, Listener {
 
-    private final Location where;
-    private final Main main;
+	private final List<Location> a = new ArrayList<>();
+	private final Main main;
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command,
-            String lable, String[] args) {
-        try {
-            if (!sender.isOp()) {
-                throw new RuntimeException("You are not OP!");
-            }
-            // Override field location.
-            ((Player) sender).getLocation(where);
+	private boolean b = true;
+	private int cursor;
+	private int c = -1;
+	
+	@Override
+	public boolean onCommand(CommandSender sender, Command command,
+			String lable, String[] args) {
+		try {
+			if (!Player.class.isInstance(sender) || !sender.isOp()) {
+				throw new RuntimeException("You are not operator!");
+			}
+			return execute(Player.class.cast(sender), args);
+		} catch (Exception e) {
+			sender.sendMessage(ChatColor.DARK_RED + e.getMessage());
+		}
+		return false;
+	}
 
-            List array = Arrays.asList(
-                    where.getWorld().getName(),
-                    where.getX(),
-                    where.getY(),
-                    where.getZ(),
-                    where.getYaw(),
-                    where.getPitch()
-                    );
+	private boolean execute(Player p, String[] args) {
+		if (args.length < 1) {
+			p.sendMessage(new String[] {
+					ChatColor.GOLD + "/logintp next",
+					ChatColor.GOLD + "/logintp del",
+					ChatColor.GOLD + "/logintp add",
+					ChatColor.GOLD + "/logintp save",
+					ChatColor.GOLD + "/logintp load",
+					ChatColor.GOLD + "/logintp list",
+			});
+		} else if (args[0].equals("next")) {
+			if (a.size() != 0) {
+				teleport(p, a.get(c()));
+			}
+		} else if (args[0].equals("del")) {
+			if (a.size() != 0) {
+				a.remove(c != 0 ? c-- : 0);
+				p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
+			}
+		} else if (args[0].equals("add")) {
+			a.add(p.getLocation());
+			p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
+		} else if (args[0].equals("save")) {
+			List<String> array = new ArrayList<>();
+			for (Location where : a) {
+				if (where.getWorld() != null) array.add(convert(where));
+			}
+			main.getConfig().set("locations", array);
+			main.saveConfig();
+			
+			p.sendMessage(ChatColor.GOLD + "Done!");
+		} else if (args[0].equals("load")) {
+			main.reloadConfig();
+			register();
+			p.sendMessage(ChatColor.GOLD + "Done!");
+		} else if (args[0].equals("list")) {
+			for (Location loc : a) {
+				p.sendMessage(ChatColor.GOLD + convert(loc));
+			}
+		} else {
+			return false;
+		}
+		return true;
+	}
 
-            main.getConfig().set("default", JSONArray.toJSONString(array));
-            main.saveConfig();
-            sender.sendMessage(ChatColor.GREEN + "设置成功");
+	@SuppressWarnings("unchecked")
+	private String convert(Location where) {
+		JSONArray array = new JSONArray();
+		array.add(where.getWorld().getName());
+		array.add(where.getX());
+		array.add(where.getY());
+		array.add(where.getZ());
+		array.add(where.getYaw());
+		array.add(where.getPitch());
+		
+		return array.toJSONString();
+	}
 
-            return true;
-        } catch (Exception e) {
-            sender.sendMessage(ChatColor.DARK_RED + e.getMessage());
-        }
-        return false;
-    }
+	private int c() {
+		if (c + 1 != a.size()) {
+			return (c = c + 1);
+		}
+		return (c = 0);
+	}
 
-    @EventHandler
-    public void handle(PlayerJoinEvent event) {
-        if (!event.getPlayer().hasPermission("logintp.bypass")) {
-            main.getServer()
-                    .getScheduler()
-                    .runTask(main, new Teleport(event.getPlayer()));
-        }
-    }
+	@EventHandler
+	public void handle(PlayerJoinEvent event) {
+		if (!event.getPlayer().hasPermission("logintp.bypass")) {
+			main.getServer()
+				.getScheduler()
+				.runTask(main, new Teleport(event.getPlayer()));
+		}
+	}
 
-    private class Teleport implements Runnable {
+	private class Teleport implements Runnable {
 
-        private final Player player;
+		private final Player player;
 
-        public void run() {
-            if (where.getWorld() != null) try {
-                // Force load chunk.
-                // Force wait chunk loaded.
-                while (!where.getChunk().isLoaded()) {
-                    where.getChunk().load();
-                }
-                // Force down vehicle.
-                if (player.getVehicle() != null) player.getVehicle().eject();
-                // And teleport the man.
-                player.teleport(where);
-            } catch (Exception e) {
-                main.getLogger().warning(e.toString());
-            }
-        }
+		public void run() {
+			if (a.size() != 0) {
+				teleport(player, a.get(cursor()));
+			}
+		}
 
-        public Teleport(Player player) {
-            this.player = player;
-        }
+		private int cursor() {
+			if (cursor + 1 != a.size()) {
+				return (cursor = cursor + 1);
+			}
+			return (cursor = 0);
+		}
 
-    }
+		public Teleport(Player player) {
+			this.player = player;
+		}
 
-    public void register() throws RuntimeException {
-        String json = main.getConfig().getString("default");
-        if (json != null) try {
-            List array = (List) new JSONParser().parse(json);
-            Iterator it = array.iterator();
-            String worldName = (String) it.next();
-            World world = main.getServer().getWorld(worldName);
-            // Check if world be removed.
-            if (world == null) throw new NullPointerException();
-            where.setWorld(world);
-            where.setX((double) it.next());
-            where.setY((double) it.next());
-            where.setZ((double) it.next());
-            where.setYaw((float) (double) it.next());
-            where.setPitch((float) (double) it.next());
-        } catch (ParseException e) {
-            throw new RuntimeException(e);
-        }
-        main.getCommand("login-tp").setExecutor(this);
-        main.getServer().getPluginManager().registerEvents(this, main);
-    }
+	}
 
-    public Executor(Main main) {
-        this.main = main;
-        this.where = new Location(null, 0, 0, 0);
-    }
+	public void register() {
+		// Low version compatible code.
+		String state = main.getConfig().getString("default", null);
+		if (state != null) {
+			add(convert(state));
+			main.getConfig().set("default", null);
+		}
+		if (b) {
+			main.getCommand("logintp").setExecutor(this);
+			main.getServer().getPluginManager().registerEvents(this, main);
+			b = !b;
+		} else {
+			a.clear();
+		}
+		// For multiple location code.
+		for (String string : main.getConfig().getStringList("locations")) {
+			add(convert(string));
+		}
+	}
+
+	private void teleport(Player player,Location location) {
+		if (location.getWorld() != null) try {
+			// Force load chunk.
+			if (!location.getChunk().isLoaded()) {
+				location.getChunk().load();
+			}
+			// Force down vehicle.
+			if (player.getVehicle() != null) player.getVehicle().eject();
+			player.teleport(location);
+		} catch (Exception e) {
+			main.getLogger().warning(e.toString());
+		}
+	}
+
+	private void add(Location where) {
+		if (where.getWorld() != null) {
+			a.add(where);
+		}
+	}
+
+	private Location convert(String string) {
+		Location where = new Location(null, 0, 0, 0);
+		try {
+			@SuppressWarnings("rawtypes")
+			Iterator it = ((List) new JSONParser().parse(string)).iterator();
+			String worldName = (String) it.next();
+			World world = main.getServer().getWorld(worldName);
+			// Check if world be removed.
+			if (world != null) {
+				where.setWorld(world);
+				
+				where.setX((double) it.next());
+				where.setY((double) it.next());
+				where.setZ((double) it.next());
+				
+				where.setYaw((float) (double) it.next());
+				where.setPitch((float) (double) it.next());
+			}
+		} catch (ParseException e) {
+			main.getLogger().warning(e.toString());
+		}
+		return where;
+	}
+
+	public Executor(Main main) {
+		this.main = main;
+	}
 
 }
