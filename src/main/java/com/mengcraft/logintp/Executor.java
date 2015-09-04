@@ -57,11 +57,12 @@ public class Executor implements CommandExecutor, Listener {
 			}
 		} else if (args[0].equals("del")) {
 			if (a.size() != 0) {
-				a.remove(c != 0 ? c-- : 0);
+				a.remove(c != -1 ? (c != 0 ? c-- : 0) : 0);
 				p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
 			}
 		} else if (args[0].equals("add")) {
 			a.add(p.getLocation());
+			c = a.size() - 1;
 			p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
 		} else if (args[0].equals("save")) {
 			List<String> array = new ArrayList<>();
