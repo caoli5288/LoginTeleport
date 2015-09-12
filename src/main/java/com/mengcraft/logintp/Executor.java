@@ -14,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -22,6 +23,8 @@ public class Executor implements CommandExecutor, Listener {
 
 	private final List<Location> a = new ArrayList<>();
 	private final Main main;
+	
+	private Location logout = new Location(null, 0, 0, 0);
 
 	private boolean b = true;
 	private int cursor;
@@ -41,78 +44,21 @@ public class Executor implements CommandExecutor, Listener {
 		return false;
 	}
 
-	private boolean execute(Player p, String[] args) {
-		if (args.length < 1) {
-			p.sendMessage(new String[] {
-					ChatColor.GOLD + "/logintp next",
-					ChatColor.GOLD + "/logintp del",
-					ChatColor.GOLD + "/logintp add",
-					ChatColor.GOLD + "/logintp save",
-					ChatColor.GOLD + "/logintp load",
-					ChatColor.GOLD + "/logintp list",
-			});
-		} else if (args[0].equals("next")) {
-			if (a.size() != 0) {
-				teleport(p, a.get(c()));
-			}
-		} else if (args[0].equals("del")) {
-			if (a.size() != 0) {
-				a.remove(c != -1 ? (c != 0 ? c-- : 0) : 0);
-				p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
-			}
-		} else if (args[0].equals("add")) {
-			a.add(p.getLocation());
-			c = a.size() - 1;
-			p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
-		} else if (args[0].equals("save")) {
-			List<String> array = new ArrayList<>();
-			for (Location where : a) {
-				if (where.getWorld() != null) array.add(convert(where));
-			}
-			main.getConfig().set("locations", array);
-			main.saveConfig();
-			
-			p.sendMessage(ChatColor.GOLD + "Done!");
-		} else if (args[0].equals("load")) {
-			main.reloadConfig();
-			register();
-			p.sendMessage(ChatColor.GOLD + "Done!");
-		} else if (args[0].equals("list")) {
-			for (Location loc : a) {
-				p.sendMessage(ChatColor.GOLD + convert(loc));
-			}
-		} else {
-			return false;
-		}
-		return true;
-	}
-
-	@SuppressWarnings("unchecked")
-	private String convert(Location where) {
-		JSONArray array = new JSONArray();
-		array.add(where.getWorld().getName());
-		array.add(where.getX());
-		array.add(where.getY());
-		array.add(where.getZ());
-		array.add(where.getYaw());
-		array.add(where.getPitch());
-		
-		return array.toJSONString();
-	}
-
-	private int c() {
-		if (c + 1 != a.size()) {
-			return (c = c + 1);
-		}
-		return (c = 0);
-	}
-
 	@EventHandler
 	public void handle(PlayerJoinEvent event) {
 		if (!event.getPlayer().hasPermission("logintp.bypass")) {
 			main.getServer()
 				.getScheduler()
 				.runTask(main, new Teleport(event.getPlayer()));
+		}
+	}
+	
+	@EventHandler
+	public void handle(PlayerQuitEvent event) {
+		if (!event.getPlayer().hasPermission("logintp.bypass")) {
+			if (getLogout().getWorld() != null) {
+				event.getPlayer().teleport(getLogout());
+			}
 		}
 	}
 
@@ -157,6 +103,10 @@ public class Executor implements CommandExecutor, Listener {
 		for (String string : main.getConfig().getStringList("locations")) {
 			add(convert(string));
 		}
+		String logout = main.getConfig().getString("logout");
+		if (logout != null) {
+			setLogout(convert(logout));
+		}
 	}
 
 	private void teleport(Player player,Location location) {
@@ -182,7 +132,6 @@ public class Executor implements CommandExecutor, Listener {
 	private Location convert(String string) {
 		Location where = new Location(null, 0, 0, 0);
 		try {
-			@SuppressWarnings("rawtypes")
 			Iterator it = ((List) new JSONParser().parse(string)).iterator();
 			String worldName = (String) it.next();
 			World world = main.getServer().getWorld(worldName);
@@ -205,6 +154,85 @@ public class Executor implements CommandExecutor, Listener {
 
 	public Executor(Main main) {
 		this.main = main;
+	}
+
+	public Location getLogout() {
+		return logout;
+	}
+
+	public void setLogout(Location logout) {
+		this.logout = logout;
+	}
+
+	private boolean execute(Player p, String[] args) {
+		if (args.length < 1) {
+			p.sendMessage(new String[] {
+					ChatColor.GOLD + "/logintp next",
+					ChatColor.GOLD + "/logintp del",
+					ChatColor.GOLD + "/logintp add",
+					ChatColor.GOLD + "/logintp save",
+					ChatColor.GOLD + "/logintp load",
+					ChatColor.GOLD + "/logintp list",
+			});
+		} else if (args[0].equals("next")) {
+			if (a.size() != 0) {
+				teleport(p, a.get(c()));
+			}
+		} else if (args[0].equals("del")) {
+			if (a.size() != 0) {
+				a.remove(c != -1 ? (c != 0 ? c-- : 0) : 0);
+				p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
+			}
+		} else if (args[0].equals("add")) {
+			a.add(p.getLocation());
+			c = a.size() - 1;
+			p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
+		} else if (args[0].equals("save")) {
+			List<String> array = new ArrayList<>();
+			for (Location where : a) {
+				if (where.getWorld() != null) array.add(convert(where));
+			}
+			main.getConfig().set("locations", array);
+			main.getConfig().set("logout", getLogout().getWorld() != null ?
+					             convert(getLogout()) : null);
+			
+			main.saveConfig();
+			
+			p.sendMessage(ChatColor.GOLD + "Done!");
+		} else if (args[0].equals("load")) {
+			main.reloadConfig();
+			register();
+			p.sendMessage(ChatColor.GOLD + "Done!");
+		} else if (args[0].equals("list")) {
+			for (Location loc : a) {
+				p.sendMessage(ChatColor.GOLD + convert(loc));
+			}
+		} else if (args[0].equals("logout")) {
+			p.getLocation(getLogout());
+			p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
+		} else {
+			return false;
+		}
+		return true;
+	}
+
+	private String convert(Location where) {
+		JSONArray array = new JSONArray();
+		array.add(where.getWorld().getName());
+		array.add(where.getX());
+		array.add(where.getY());
+		array.add(where.getZ());
+		array.add(where.getYaw());
+		array.add(where.getPitch());
+		
+		return array.toJSONString();
+	}
+
+	private int c() {
+		if (c + 1 != a.size()) {
+			return (c = c + 1);
+		}
+		return (c = 0);
 	}
 
 }
