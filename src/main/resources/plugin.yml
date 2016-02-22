@@ -1,6 +1,6 @@
 main: com.mengcraft.logintp.Main
 name: LoginTeleport
-version: 0.5
+version: ${project.version}
 author: mengcraft.com
 website: http://www.mengcraft.com/
 

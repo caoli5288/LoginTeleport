@@ -23,16 +23,14 @@ public class Executor implements CommandExecutor, Listener {
 
 	private final List<Location> a = new ArrayList<>();
 	private final Main main;
-	
-	private Location logout = new Location(null, 0, 0, 0);
 
 	private boolean b = true;
 	private int cursor;
 	private int c = -1;
-	
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command command,
-			String lable, String[] args) {
+			String label, String[] args) {
 		try {
 			if (!Player.class.isInstance(sender) || !sender.isOp()) {
 				throw new RuntimeException("You are not operator!");
@@ -52,13 +50,11 @@ public class Executor implements CommandExecutor, Listener {
 				.runTask(main, new Teleport(event.getPlayer()));
 		}
 	}
-	
+
 	@EventHandler
 	public void handle(PlayerQuitEvent event) {
 		if (!event.getPlayer().hasPermission("logintp.bypass")) {
-			if (getLogout().getWorld() != null) {
-				event.getPlayer().teleport(getLogout());
-			}
+            new Teleport(event.getPlayer()).run();
 		}
 	}
 
@@ -73,11 +69,11 @@ public class Executor implements CommandExecutor, Listener {
 		}
 
 		private int cursor() {
-			if (cursor + 1 != a.size()) {
-				return (cursor = cursor + 1);
-			}
-			return (cursor = 0);
-		}
+            if (cursor < a.size()) {
+                return cursor++;
+            }
+            return cursor = 0;
+        }
 
 		public Teleport(Player player) {
 			this.player = player;
@@ -102,10 +98,6 @@ public class Executor implements CommandExecutor, Listener {
 		// For multiple location code.
 		for (String string : main.getConfig().getStringList("locations")) {
 			add(convert(string));
-		}
-		String logout = main.getConfig().getString("logout");
-		if (logout != null) {
-			setLogout(convert(logout));
 		}
 	}
 
@@ -138,11 +130,11 @@ public class Executor implements CommandExecutor, Listener {
 			// Check if world be removed.
 			if (world != null) {
 				where.setWorld(world);
-				
+
 				where.setX((double) it.next());
 				where.setY((double) it.next());
 				where.setZ((double) it.next());
-				
+
 				where.setYaw((float) (double) it.next());
 				where.setPitch((float) (double) it.next());
 			}
@@ -156,14 +148,6 @@ public class Executor implements CommandExecutor, Listener {
 		this.main = main;
 	}
 
-	public Location getLogout() {
-		return logout;
-	}
-
-	public void setLogout(Location logout) {
-		this.logout = logout;
-	}
-
 	private boolean execute(Player p, String[] args) {
 		if (args.length < 1) {
 			p.sendMessage(new String[] {
@@ -172,7 +156,7 @@ public class Executor implements CommandExecutor, Listener {
 					ChatColor.GOLD + "/logintp add",
 					ChatColor.GOLD + "/logintp save",
 					ChatColor.GOLD + "/logintp load",
-					ChatColor.GOLD + "/logintp list",
+					ChatColor.GOLD + "/logintp list"
 			});
 		} else if (args[0].equals("next")) {
 			if (a.size() != 0) {
@@ -193,11 +177,8 @@ public class Executor implements CommandExecutor, Listener {
 				if (where.getWorld() != null) array.add(convert(where));
 			}
 			main.getConfig().set("locations", array);
-			main.getConfig().set("logout", getLogout().getWorld() != null ?
-					             convert(getLogout()) : null);
-			
 			main.saveConfig();
-			
+
 			p.sendMessage(ChatColor.GOLD + "Done!");
 		} else if (args[0].equals("load")) {
 			main.reloadConfig();
@@ -207,16 +188,14 @@ public class Executor implements CommandExecutor, Listener {
 			for (Location loc : a) {
 				p.sendMessage(ChatColor.GOLD + convert(loc));
 			}
-		} else if (args[0].equals("logout")) {
-			p.getLocation(getLogout());
-			p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
 		} else {
 			return false;
 		}
 		return true;
 	}
 
-	private String convert(Location where) {
+	@SuppressWarnings("unchecked")
+    private String convert(Location where) {
 		JSONArray array = new JSONArray();
 		array.add(where.getWorld().getName());
 		array.add(where.getX());
@@ -224,7 +203,7 @@ public class Executor implements CommandExecutor, Listener {
 		array.add(where.getZ());
 		array.add(where.getYaw());
 		array.add(where.getPitch());
-		
+
 		return array.toJSONString();
 	}
 
