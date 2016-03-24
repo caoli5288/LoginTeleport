@@ -15,6 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -23,6 +24,7 @@ public class Executor implements CommandExecutor, Listener {
 
 	private final List<Location> a = new ArrayList<>();
 	private final Main main;
+	private final Config config;
 
 	private boolean b = true;
 	private int cursor;
@@ -51,12 +53,21 @@ public class Executor implements CommandExecutor, Listener {
 		}
 	}
 
+    @EventHandler
+    public void handle(PlayerRespawnEvent event) {
+        if (config.isPortalQuit() && !event.getPlayer().hasPermission("logintp.bypass")) {
+            main.getServer()
+                .getScheduler()
+                .runTask(main, new Teleport(event.getPlayer()));
+        }
+    }
+
 	@EventHandler
 	public void handle(PlayerQuitEvent event) {
-		if (!event.getPlayer().hasPermission("logintp.bypass")) {
+        if (config.isPortalQuit() && !event.getPlayer().hasPermission("logintp.bypass")) {
             new Teleport(event.getPlayer()).run();
-		}
-	}
+        }
+    }
 
 	private class Teleport implements Runnable {
 
@@ -99,6 +110,7 @@ public class Executor implements CommandExecutor, Listener {
 		for (String string : main.getConfig().getStringList("locations")) {
 			add(convert(string));
 		}
+        config.load();
 	}
 
 	private void teleport(Player player,Location location) {
@@ -144,8 +156,9 @@ public class Executor implements CommandExecutor, Listener {
 		return where;
 	}
 
-	public Executor(Main main) {
+	public Executor(Main main, Config config) {
 		this.main = main;
+		this.config = config;
 	}
 
 	private boolean execute(Player p, String[] args) {

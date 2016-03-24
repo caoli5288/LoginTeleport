@@ -6,6 +6,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class Main extends JavaPlugin {
 
     public void onEnable() {
+        getConfig().options().copyDefaults(true);
+        saveConfig();
+
         String[] ad = {
                 ChatColor.GREEN + "梦梦家高性能服务器出租店",
                 ChatColor.GREEN + "shop105595113.taobao.com"
@@ -17,8 +20,8 @@ public class Main extends JavaPlugin {
         } catch (Exception e) {
             getLogger().warning(e.toString());
         }
-        
-        new Executor(this).register();
+
+        new Executor(this, new Config(this)).register();
     }
 
 }
