@@ -7,6 +7,7 @@ public class Config {
 
     private final Main main;
 
+    private boolean portalVoid;
     private boolean portalQuit;
     private boolean portalRespawn;
 
@@ -33,6 +34,15 @@ public class Config {
     public void load() {
         setPortalQuit(main.getConfig().getBoolean("portal.quit"));
         setPortalRespawn(main.getConfig().getBoolean("portal.respawn"));
+        setPortalVoid(main.getConfig().getBoolean("portal.void"));
+    }
+
+    public boolean isPortalVoid() {
+        return portalVoid;
+    }
+
+    public void setPortalVoid(boolean portalVoid) {
+        this.portalVoid = portalVoid;
     }
 
     public void save() {
