@@ -6,6 +6,7 @@ import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -25,12 +26,11 @@ import java.util.List;
 
 public class Executor implements CommandExecutor, Listener {
 
-    private final List<Location> a = new ArrayList<>();
+    private final List<Location> loc = new ArrayList<>();
     private final Main main;
     private final Config config;
 
-    private boolean b = true;
-    private int cursor;
+    private Iterator<Location> it;
     private int c = -1;
 
     @Override
@@ -49,92 +49,84 @@ public class Executor implements CommandExecutor, Listener {
     @EventHandler
     public void handle(PlayerJoinEvent event) {
         if (!event.getPlayer().hasPermission("logintp.bypass")) {
-            main.getServer().getScheduler().runTask(main, new Teleport(event.getPlayer()));
+            main.run(() -> process(event.getPlayer()));
         }
     }
 
     @EventHandler
     public void handle(PlayerRespawnEvent event) {
         if (config.isPortalQuit() && !event.getPlayer().hasPermission("logintp.bypass")) {
-            main.getServer().getScheduler().runTask(main, new Teleport(event.getPlayer()));
+            Location location = nextLocation();
+            if (!Main.nil(location)) {
+                event.setRespawnLocation(location);
+            }
         }
     }
 
     @EventHandler
     public void handle(PlayerQuitEvent event) {
         if (config.isPortalQuit() && !event.getPlayer().hasPermission("logintp.bypass")) {
-            new Teleport(event.getPlayer()).run();
+            process(event.getPlayer());
         }
     }
 
     @EventHandler
     public void handle(EntityDamageEvent event) {
         if (config.isPortalVoid() && event.getEntityType() == EntityType.PLAYER && event.getCause() == DamageCause.VOID) {
-            main.getServer().getScheduler().runTask(main, new Teleport((Player) event.getEntity()));
+            event.setCancelled(true);
+            process(Player.class.cast(event.getEntity()));
         }
     }
 
-    private class Teleport implements Runnable {
-
-        private final Player player;
-
-        public void run() {
-            if (a.size() != 0) {
-                teleport(player, a.get(cursor()));
-            }
+    private void process(Player player) {
+        Location location = nextLocation();
+        if (!Main.nil(location)) {
+            process(player, location);
         }
-
-        private int cursor() {
-            if (cursor < a.size()) {
-                return cursor++;
-            }
-            return cursor = 0;
-        }
-
-        public Teleport(Player player) {
-            this.player = player;
-        }
-
     }
 
-    public void register() {
+    private Location nextLocation() {
+        if (Main.nil(it) || !it.hasNext()) {
+            if (loc.isEmpty()) {
+                return null;
+            }
+            it = loc.iterator();
+        }
+        return it.next();
+    }
+
+    private void process(Player player, Location location) {
+        if (!Main.nil(location.getWorld())) {
+            Entity vehicle = player.getVehicle();
+            if (!Main.nil(vehicle)) {
+                vehicle.eject();
+                vehicle.teleport(location);
+                main.run(() -> {
+                    vehicle.setPassenger(player);
+                });
+            }
+            player.teleport(location);
+        }
+    }
+
+    public void load() {
         // Low version compatible code.
         String state = main.getConfig().getString("default", null);
         if (state != null) {
             add(convert(state));
             main.getConfig().set("default", null);
         }
-        if (b) {
-            main.getCommand("logintp").setExecutor(this);
-            main.getServer().getPluginManager().registerEvents(this, main);
-            b = !b;
-        } else {
-            a.clear();
-        }
         // For multiple location code.
+        if (!loc.isEmpty()) loc.clear();
         for (String string : main.getConfig().getStringList("locations")) {
             add(convert(string));
         }
         config.load();
     }
 
-    private void teleport(Player player, Location location) {
-        if (location.getWorld() != null) try {
-            // Force load chunk.
-            if (!location.getChunk().isLoaded()) {
-                location.getChunk().load();
-            }
-            // Force down vehicle.
-            if (player.getVehicle() != null) player.getVehicle().eject();
-            player.teleport(location);
-        } catch (Exception e) {
-            main.getLogger().warning(e.toString());
-        }
-    }
-
     private void add(Location where) {
         if (where.getWorld() != null) {
-            a.add(where);
+            loc.add(where);
         }
     }
 
@@ -177,21 +169,21 @@ public class Executor implements CommandExecutor, Listener {
                     ChatColor.GOLD + "/logintp list"
             });
         } else if (args[0].equals("next")) {
-            if (a.size() != 0) {
-                teleport(p, a.get(c()));
+            if (loc.size() != 0) {
+                process(p, loc.get(c()));
             }
         } else if (args[0].equals("del")) {
-            if (a.size() != 0) {
-                a.remove(c != -1 ? (c != 0 ? c-- : 0) : 0);
+            if (loc.size() != 0) {
+                loc.remove(c != -1 ? (c != 0 ? c-- : 0) : 0);
                 p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
             }
         } else if (args[0].equals("add")) {
-            a.add(p.getLocation());
-            c = a.size() - 1;
+            loc.add(p.getLocation());
+            c = loc.size() - 1;
             p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
         } else if (args[0].equals("save")) {
             List<String> array = new ArrayList<>();
-            for (Location where : a) {
+            for (Location where : loc) {
                 if (where.getWorld() != null) array.add(convert(where));
             }
             main.getConfig().set("locations", array);
@@ -200,10 +192,10 @@ public class Executor implements CommandExecutor, Listener {
             p.sendMessage(ChatColor.GOLD + "Done!");
         } else if (args[0].equals("load")) {
             main.reloadConfig();
-            register();
+            load();
             p.sendMessage(ChatColor.GOLD + "Done!");
         } else if (args[0].equals("list")) {
-            for (Location loc : a) {
+            for (Location loc : this.loc) {
                 p.sendMessage(ChatColor.GOLD + convert(loc));
             }
         } else {
@@ -226,7 +218,7 @@ public class Executor implements CommandExecutor, Listener {
     }
 
     private int c() {
-        if (c + 1 != a.size()) {
+        if (c + 1 != loc.size()) {
             return (c = c + 1);
         }
         return (c = 0);
