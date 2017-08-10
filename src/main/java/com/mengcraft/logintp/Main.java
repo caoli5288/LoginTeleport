@@ -1,13 +1,18 @@
 package com.mengcraft.logintp;
 
+import lombok.val;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class Main extends JavaPlugin {
 
     public void onEnable() {
-        getConfig().options().copyDefaults(true);
-        saveConfig();
+        saveDefaultConfig();
+
+        if (getConfig().get("portal.portal", null) == null) {
+            getConfig().options().copyDefaults(true);
+            saveConfig();
+        }
 
         String[] ad = {
                 ChatColor.GREEN + "梦梦家高性能服务器出租店",
@@ -15,12 +20,12 @@ public class Main extends JavaPlugin {
         };
         getServer().getConsoleSender().sendMessage(ad);
 
-        Executor executor = new Executor(this, new Config(this));
+        val exec = new Executor(this);
 
-        getCommand("logintp").setExecutor(executor);
-        getServer().getPluginManager().registerEvents(executor, this);
+        getCommand("logintp").setExecutor(exec);
+        getServer().getPluginManager().registerEvents(exec, this);
 
-        executor.load();
+        exec.load();
 
         try {
             new Metrics(this).start();

@@ -1,4 +1,5 @@
 portal:
-  respawn: false
+  spawn: false
   quit: true
   void: false
+  portal: false

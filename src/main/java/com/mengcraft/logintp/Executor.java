@@ -1,7 +1,9 @@
 package com.mengcraft.logintp;
 
+import lombok.val;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -28,18 +30,21 @@ public class Executor implements CommandExecutor, Listener {
 
     private final List<Location> loc = new ArrayList<>();
     private final Main main;
-    private final Config config;
 
     private Iterator<Location> it;
     private int c = -1;
 
+    Executor(Main main) {
+        this.main = main;
+    }
+
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] in) {
         try {
             if (!Player.class.isInstance(sender) || !sender.isOp()) {
                 throw new RuntimeException("You are not operator!");
             }
-            return execute(Player.class.cast(sender), args);
+            return execute(Player.class.cast(sender), in);
         } catch (Exception e) {
             sender.sendMessage(ChatColor.DARK_RED + e.getMessage());
         }
@@ -49,13 +54,20 @@ public class Executor implements CommandExecutor, Listener {
     @EventHandler
     public void handle(PlayerJoinEvent event) {
         if (!event.getPlayer().hasPermission("logintp.bypass")) {
-            main.run(() -> process(event.getPlayer()));
+            if (Mgr.INSTANCE.isPortalQuit()) {
+                main.run(() -> portal(event.getPlayer()));
+            } else if (Mgr.INSTANCE.isPortalPortal()) {
+                val b = event.getPlayer().getLocation().getBlock();
+                if (b.getType() == Material.PORTAL) {
+                    main.run(() -> portal(event.getPlayer()));
+                }
+            }
         }
     }
 
     @EventHandler
     public void handle(PlayerRespawnEvent event) {
-        if (config.isPortalQuit() && !event.getPlayer().hasPermission("logintp.bypass")) {
+        if (Mgr.INSTANCE.isPortalSpawn() && !event.getPlayer().hasPermission("logintp.bypass")) {
             Location location = nextLocation();
             if (!Main.nil(location)) {
                 event.setRespawnLocation(location);
@@ -65,23 +77,23 @@ public class Executor implements CommandExecutor, Listener {
 
     @EventHandler
     public void handle(PlayerQuitEvent event) {
-        if (config.isPortalQuit() && !event.getPlayer().hasPermission("logintp.bypass")) {
-            process(event.getPlayer());
+        if (Mgr.INSTANCE.isPortalQuit() && !event.getPlayer().hasPermission("logintp.bypass")) {
+            portal(event.getPlayer());
         }
     }
 
     @EventHandler
     public void handle(EntityDamageEvent event) {
-        if (config.isPortalVoid() && event.getEntityType() == EntityType.PLAYER && event.getCause() == DamageCause.VOID) {
+        if (Mgr.INSTANCE.isPortalVoid() && event.getEntityType() == EntityType.PLAYER && event.getCause() == DamageCause.VOID) {
             event.setCancelled(true);
-            process(Player.class.cast(event.getEntity()));
+            portal(Player.class.cast(event.getEntity()));
         }
     }
 
-    private void process(Player player) {
+    private void portal(Player player) {
         Location location = nextLocation();
         if (!Main.nil(location)) {
-            process(player, location);
+            portal(player, location);
         }
     }
 
@@ -95,7 +107,7 @@ public class Executor implements CommandExecutor, Listener {
         return it.next();
     }
 
-    private void process(Player player, Location location) {
+    private void portal(Player player, Location location) {
         if (!Main.nil(location.getWorld())) {
             Entity vehicle = player.getVehicle();
             if (!Main.nil(vehicle)) {
@@ -121,7 +133,7 @@ public class Executor implements CommandExecutor, Listener {
         for (String string : main.getConfig().getStringList("locations")) {
             add(convert(string));
         }
-        config.load();
+        Mgr.INSTANCE.load(main);
     }
 
     private void add(Location where) {
@@ -153,11 +165,6 @@ public class Executor implements CommandExecutor, Listener {
         return where;
     }
 
-    public Executor(Main main, Config config) {
-        this.main = main;
-        this.config = config;
-    }
-
     private boolean execute(Player p, String[] args) {
         if (args.length < 1) {
             p.sendMessage(new String[]{
@@ -170,7 +177,7 @@ public class Executor implements CommandExecutor, Listener {
             });
         } else if (args[0].equals("next")) {
             if (loc.size() != 0) {
-                process(p, loc.get(c()));
+                portal(p, loc.get(c()));
             }
         } else if (args[0].equals("del")) {
             if (loc.size() != 0) {

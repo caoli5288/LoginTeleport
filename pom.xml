@@ -2,13 +2,19 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.mengcraft</groupId>
     <artifactId>logintp</artifactId>
-    <version>0.7</version>
+    <version>0.8</version>
     <name>LoginTeleport</name>
     <dependencies>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.7.10-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.16.16</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
