@@ -68,7 +68,7 @@ public class Executor implements CommandExecutor, Listener {
     @EventHandler
     public void handle(PlayerRespawnEvent event) {
         if (Mgr.INSTANCE.isPortalSpawn() && !event.getPlayer().hasPermission("logintp.bypass")) {
-            Location location = nextLocation();
+            Location location = nextLocation(event.getPlayer());
             if (!Main.nil(location)) {
                 event.setRespawnLocation(location);
             }
@@ -90,17 +90,17 @@ public class Executor implements CommandExecutor, Listener {
         }
     }
 
-    private void portal(Player player) {
-        Location location = nextLocation();
+    private void portal(Player p) {
+        Location location = nextLocation(p);
         if (!Main.nil(location)) {
-            portal(player, location);
+            portal(p, location);
         }
     }
 
-    private Location nextLocation() {
+    private Location nextLocation(Player p) {
         if (Main.nil(it) || !it.hasNext()) {
             if (loc.isEmpty()) {
-                return null;
+                return p.getWorld().getSpawnLocation();
             }
             it = loc.iterator();
         }
@@ -130,7 +130,8 @@ public class Executor implements CommandExecutor, Listener {
         }
         // For multiple location code.
         if (!loc.isEmpty()) loc.clear();
-        for (String string : main.getConfig().getStringList("locations")) {
+        val list = main.getConfig().getStringList("locations");
+        for (String string : list) {
             add(convert(string));
         }
         Mgr.INSTANCE.load(main);
