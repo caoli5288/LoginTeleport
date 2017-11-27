@@ -3,16 +3,12 @@ package com.mengcraft.logintp;
 import lombok.val;
 import org.bukkit.ChatColor;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 public class Main extends JavaPlugin {
 
     public void onEnable() {
         saveDefaultConfig();
-
-        if (getConfig().get("portal.portal", null) == null) {
-            getConfig().options().copyDefaults(true);
-            saveConfig();
-        }
 
         String[] ad = {
                 ChatColor.GREEN + "梦梦家高性能服务器出租店",
@@ -34,8 +30,12 @@ public class Main extends JavaPlugin {
         }
     }
 
-    public void run(Runnable runnable) {
-        getServer().getScheduler().runTask(this, runnable);
+    public BukkitTask run(Runnable runnable) {
+        return getServer().getScheduler().runTask(this, runnable);
+    }
+
+    public BukkitTask run(int later, Runnable runnable) {
+        return getServer().getScheduler().runTaskLater(this, runnable, later);
     }
 
     public static boolean nil(Object i) {

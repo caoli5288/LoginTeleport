@@ -15,16 +15,24 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityPortalEnterEvent;
+import org.bukkit.event.entity.EntityPortalExitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.scheduler.BukkitTask;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static com.mengcraft.logintp.Main.nil;
 
 public class Executor implements CommandExecutor, Listener {
 
@@ -51,17 +59,40 @@ public class Executor implements CommandExecutor, Listener {
         return false;
     }
 
+    private final Map<UUID, BukkitTask> portal = new HashMap<>();
+
+    @EventHandler
+    public void handle(EntityPortalEnterEvent event) {
+        if (!Mgr.INSTANCE.isPortalPortal() || !(event.getEntityType() == EntityType.PLAYER) || portal.containsKey(event.getEntity().getUniqueId())) {
+            return;
+        }
+
+        portal.put(event.getEntity().getUniqueId(), main.run(80, () -> portalIfPortal((Player) event.getEntity())));
+    }
+
+    @EventHandler
+    public void handle(EntityPortalExitEvent event) {
+        val remove = portal.remove(event.getEntity().getUniqueId());
+        if (!nil(remove)) {
+            remove.cancel();
+        }
+    }
+
     @EventHandler
     public void handle(PlayerJoinEvent event) {
         if (!event.getPlayer().hasPermission("logintp.bypass")) {
             if (Mgr.INSTANCE.isPortalQuit()) {
                 main.run(() -> portal(event.getPlayer()));
             } else if (Mgr.INSTANCE.isPortalPortal()) {
-                val b = event.getPlayer().getLocation().getBlock();
-                if (b.getType() == Material.PORTAL) {
-                    main.run(() -> portal(event.getPlayer()));
-                }
+                portalIfPortal(event.getPlayer());
             }
+        }
+    }
+
+    private void portalIfPortal(Player p) {
+        val b = p.getLocation().getBlock();
+        if (b.getType() == Material.PORTAL) {
+            main.run(() -> portal(p));
         }
     }
 
@@ -69,7 +100,7 @@ public class Executor implements CommandExecutor, Listener {
     public void handle(PlayerRespawnEvent event) {
         if (Mgr.INSTANCE.isPortalSpawn() && !event.getPlayer().hasPermission("logintp.bypass")) {
             Location location = nextLocation(event.getPlayer());
-            if (!Main.nil(location)) {
+            if (!nil(location)) {
                 event.setRespawnLocation(location);
             }
         }
@@ -92,13 +123,13 @@ public class Executor implements CommandExecutor, Listener {
 
     private void portal(Player p) {
         Location location = nextLocation(p);
-        if (!Main.nil(location)) {
+        if (!nil(location)) {
             portal(p, location);
         }
     }
 
     private Location nextLocation(Player p) {
-        if (Main.nil(it) || !it.hasNext()) {
+        if (nil(it) || !it.hasNext()) {
             if (loc.isEmpty()) {
                 return p.getWorld().getSpawnLocation();
             }
@@ -108,9 +139,9 @@ public class Executor implements CommandExecutor, Listener {
     }
 
     private void portal(Player player, Location location) {
-        if (!Main.nil(location.getWorld())) {
+        if (!nil(location.getWorld())) {
             Entity vehicle = player.getVehicle();
-            if (!Main.nil(vehicle)) {
+            if (!nil(vehicle)) {
                 vehicle.eject();
                 vehicle.teleport(location);
                 main.run(() -> {
