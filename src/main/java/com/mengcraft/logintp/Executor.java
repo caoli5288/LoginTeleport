@@ -67,7 +67,10 @@ public class Executor implements CommandExecutor, Listener {
             return;
         }
 
-        portal.put(event.getEntity().getUniqueId(), main.run(80, () -> portalIfPortal((Player) event.getEntity())));
+        portal.put(event.getEntity().getUniqueId(), main.run(80, () -> {
+            portal.remove(event.getEntity().getUniqueId());
+            portalIfPortal((Player) event.getEntity());
+        }));
     }
 
     @EventHandler
