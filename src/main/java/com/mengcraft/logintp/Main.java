@@ -17,11 +17,10 @@ public class Main extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(ad);
 
         val exec = new Executor(this);
+        run(exec::load);// To avoid NPE if world load after plugin loaded
 
         getCommand("logintp").setExecutor(exec);
         getServer().getPluginManager().registerEvents(exec, this);
-
-        exec.load();
 
         try {
             new Metrics(this).start();
@@ -30,8 +29,8 @@ public class Main extends JavaPlugin {
         }
     }
 
-    public BukkitTask run(Runnable runnable) {
-        return getServer().getScheduler().runTask(this, runnable);
+    public void run(Runnable runnable) {
+        getServer().getScheduler().runTask(this, runnable);
     }
 
     public BukkitTask run(int later, Runnable runnable) {
