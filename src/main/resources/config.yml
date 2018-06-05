@@ -3,3 +3,4 @@ portal:
   quit: true
   void: false
   portal: false
+default_fallback: 10000,100,10000

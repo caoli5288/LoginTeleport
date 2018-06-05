@@ -1,6 +1,7 @@
 package com.mengcraft.logintp;
 
 import lombok.val;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,12 +21,14 @@ import org.bukkit.event.entity.EntityPortalExitEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.scheduler.BukkitTask;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -41,6 +44,7 @@ public class Executor implements CommandExecutor, Listener {
 
     private Iterator<Location> it;
     private int c = -1;
+    private Location defaultfallback;
 
     Executor(Main main) {
         this.main = main;
@@ -169,6 +173,21 @@ public class Executor implements CommandExecutor, Listener {
             add(convert(string));
         }
         Mgr.INSTANCE.load(main);
+        // hack
+        String strdefaultfallback = main.getConfig().getString("default_fallback", "10000,100,10000");
+        {
+            Iterator<String> itr = Arrays.asList(strdefaultfallback.split(",")).iterator();
+            defaultfallback = new Location(null, Double.valueOf(itr.next().trim()), Double.valueOf(itr.next().trim()), Double.valueOf(itr.next().trim()));
+            Bukkit.getWorlds().forEach(w -> w.setSpawnLocation(defaultfallback.getBlockX(), defaultfallback.getBlockY(), defaultfallback.getBlockZ()));
+        }
+    }
+
+    @EventHandler
+    public void onWorldLoad(WorldLoadEvent event) {
+        if (defaultfallback == null) {
+            return;
+        }
+        event.getWorld().setSpawnLocation(defaultfallback.getBlockX(), defaultfallback.getBlockY(), defaultfallback.getBlockZ());// hack
     }
 
     private void add(Location where) {
