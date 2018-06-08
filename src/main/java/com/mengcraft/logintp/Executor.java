@@ -128,7 +128,7 @@ public class Executor implements CommandExecutor, Listener {
         }
     }
 
-    private void portal(Player p) {
+    protected void portal(Player p) {
         Location location = nextLocation(p);
         if (!nil(location)) {
             portal(p, location);

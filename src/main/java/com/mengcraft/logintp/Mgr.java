@@ -11,6 +11,7 @@ public enum Mgr {
     private boolean portalQuit;
     private boolean portalPortal;
     private boolean portalSpawn;
+    private boolean portalFalling;
 
     private Main main;
 
@@ -28,6 +29,7 @@ public enum Mgr {
         setPortalVoid(main.getConfig().getBoolean("portal.void"));
         portalPortal = main.getConfig().getBoolean("portal.portal");
         portalSpawn = main.getConfig().getBoolean("portal.spawn");
+        portalFalling = main.getConfig().getBoolean("portal.falling");
     }
 
     public boolean isPortalVoid() {
@@ -52,6 +54,14 @@ public enum Mgr {
 
     public void setPortalSpawn(boolean portalSpawn) {
         this.portalSpawn = portalSpawn;
+    }
+
+    public boolean isPortalFalling() {
+        return portalFalling;
+    }
+
+    public void setPortalFalling(boolean portalFalling) {
+        this.portalFalling = portalFalling;
     }
 
     public void save() {
