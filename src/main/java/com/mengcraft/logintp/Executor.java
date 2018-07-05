@@ -44,7 +44,6 @@ public class Executor implements CommandExecutor, Listener {
 
     private Iterator<Location> it;
     private int c = -1;
-    private Location defaultfallback;
 
     Executor(Main main) {
         this.main = main;
@@ -173,21 +172,6 @@ public class Executor implements CommandExecutor, Listener {
             add(convert(string));
         }
         Mgr.INSTANCE.load(main);
-        // hack
-        String strdefaultfallback = main.getConfig().getString("default_fallback", "10000,100,10000");
-        {
-            Iterator<String> itr = Arrays.asList(strdefaultfallback.split(",")).iterator();
-            defaultfallback = new Location(null, Double.valueOf(itr.next().trim()), Double.valueOf(itr.next().trim()), Double.valueOf(itr.next().trim()));
-            Bukkit.getWorlds().forEach(w -> w.setSpawnLocation(defaultfallback.getBlockX(), defaultfallback.getBlockY(), defaultfallback.getBlockZ()));
-        }
-    }
-
-    @EventHandler
-    public void onWorldLoad(WorldLoadEvent event) {
-        if (defaultfallback == null) {
-            return;
-        }
-        event.getWorld().setSpawnLocation(defaultfallback.getBlockX(), defaultfallback.getBlockY(), defaultfallback.getBlockZ());// hack
     }
 
     private void add(Location where) {
