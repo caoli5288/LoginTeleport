@@ -86,13 +86,10 @@ public class Executor implements CommandExecutor, Listener {
 
     @EventHandler
     public void handle(PlayerJoinEvent event) {
-        if (!event.getPlayer().hasPermission("logintp.bypass")) {
-            if (Mgr.INSTANCE.isPortalQuit()) {
-                main.run(() -> portal(event.getPlayer()));
-            } else if (Mgr.INSTANCE.isPortalPortal()) {
-                portalIfPortal(event.getPlayer());
-            }
+        if (event.getPlayer().hasPermission("logintp.bypass")) {
+            return;
         }
+        main.run(() -> portal(event.getPlayer()));
     }
 
     private void portalIfPortal(Player p) {
