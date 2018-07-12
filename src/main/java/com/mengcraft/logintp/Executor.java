@@ -1,7 +1,6 @@
 package com.mengcraft.logintp;
 
 import lombok.val;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,22 +12,21 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.EntityPortalExitEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.scheduler.BukkitTask;
 import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
+import org.spigotmc.event.player.PlayerSpawnLocationEvent;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -84,12 +82,20 @@ public class Executor implements CommandExecutor, Listener {
         }
     }
 
-    @EventHandler
-    public void handle(PlayerJoinEvent event) {
-        if (event.getPlayer().hasPermission("logintp.bypass")) {
-            return;
+//    @EventHandler
+//    public void handle(PlayerJoinEvent event) {
+//        if (event.getPlayer().hasPermission("logintp.bypass")) {
+//            return;
+//        }
+//        main.run(() -> portal(event.getPlayer()));
+//    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void handle(PlayerSpawnLocationEvent event) {
+        Location location = nextLocation(event.getPlayer());
+        if (!nil(location)) {
+            event.setSpawnLocation(location);
         }
-        main.run(() -> portal(event.getPlayer()));
     }
 
     private void portalIfPortal(Player p) {
