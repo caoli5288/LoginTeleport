@@ -24,14 +24,15 @@ public class Main extends JavaPlugin {
         getServer().getConsoleSender().sendMessage(ad);
 
         executor = new Executor(this);
-        run(executor::load);// To avoid NPE if world load after plugin loaded
+        run(() -> {
+            executor.load();
+            if (Mgr.INSTANCE.isPortalFalling()) {
+                Bukkit.getScheduler().runTaskTimer(this, this::avoidFalling, 1, 1);
+            }
+        });// To avoid NPE if world load after plugin loaded
 
         getCommand("logintp").setExecutor(executor);
         getServer().getPluginManager().registerEvents(executor, this);
-
-        if (Mgr.INSTANCE.isPortalFalling()) {
-            Bukkit.getScheduler().runTaskTimer(this, this::avoidFalling, 1, 1);
-        }
 
         try {
             new Metrics(this).start();
