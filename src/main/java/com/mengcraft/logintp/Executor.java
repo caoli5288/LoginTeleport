@@ -152,10 +152,8 @@ public class Executor implements CommandExecutor, Listener {
             Entity vehicle = player.getVehicle();
             if (!nil(vehicle)) {
                 vehicle.eject();
-                vehicle.teleport(location);
-                main.run(() -> {
-                    vehicle.setPassenger(player);
-                });
+//                vehicle.teleport(location);
+//                main.run(() -> vehicle.setPassenger(player));
             }
             player.teleport(location);
         }
