@@ -37,11 +37,11 @@ import static com.mengcraft.logintp.Main.nil;
 
 public class Executor implements CommandExecutor, Listener {
 
-    private final List<Location> loc = new ArrayList<>();
+    private final List<Location> locations = new ArrayList<>();
     private final Main main;
 
     private Iterator<Location> it;
-    private int c = -1;
+    private int cursor = -1;
 
     Executor(Main main) {
         this.main = main;
@@ -139,10 +139,10 @@ public class Executor implements CommandExecutor, Listener {
 
     private Location nextLocation(Player p) {
         if (nil(it) || !it.hasNext()) {
-            if (loc.isEmpty()) {
+            if (locations.isEmpty()) {
                 return p.getWorld().getSpawnLocation();
             }
-            it = loc.iterator();
+            it = locations.iterator();
         }
         return it.next();
     }
@@ -160,6 +160,7 @@ public class Executor implements CommandExecutor, Listener {
     }
 
     public void load() {
+        it = null;
         // Low version compatible code.
         String state = main.getConfig().getString("default", null);
         if (state != null) {
@@ -167,7 +168,7 @@ public class Executor implements CommandExecutor, Listener {
             main.getConfig().set("default", null);
         }
         // For multiple location code.
-        if (!loc.isEmpty()) loc.clear();
+        if (!locations.isEmpty()) locations.clear();
         val list = main.getConfig().getStringList("locations");
         for (String string : list) {
             add(convert(string));
@@ -177,7 +178,7 @@ public class Executor implements CommandExecutor, Listener {
 
     private void add(Location where) {
         if (where.getWorld() != null) {
-            loc.add(where);
+            locations.add(where);
         }
     }
 
@@ -215,21 +216,23 @@ public class Executor implements CommandExecutor, Listener {
                     ChatColor.GOLD + "/logintp list"
             });
         } else if (args[0].equals("next")) {
-            if (loc.size() != 0) {
-                portal(p, loc.get(c()));
+            if (locations.size() != 0) {
+                portal(p, locations.get(moveCursor()));
             }
         } else if (args[0].equals("del")) {
-            if (loc.size() != 0) {
-                loc.remove(c != -1 ? (c != 0 ? c-- : 0) : 0);
+            if (locations.size() != 0) {
+                it = null;
+                locations.remove(cursor != -1 ? (cursor != 0 ? cursor-- : 0) : 0);
                 p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
             }
         } else if (args[0].equals("add")) {
-            loc.add(p.getLocation());
-            c = loc.size() - 1;
+            it = null;
+            locations.add(p.getLocation());
+            cursor = locations.size() - 1;
             p.sendMessage(ChatColor.GOLD + "Done! Please save it.");
         } else if (args[0].equals("save")) {
             List<String> array = new ArrayList<>();
-            for (Location where : loc) {
+            for (Location where : locations) {
                 if (where.getWorld() != null) array.add(convert(where));
             }
             main.getConfig().set("locations", array);
@@ -241,7 +244,7 @@ public class Executor implements CommandExecutor, Listener {
             load();
             p.sendMessage(ChatColor.GOLD + "Done!");
         } else if (args[0].equals("list")) {
-            for (Location loc : this.loc) {
+            for (Location loc : this.locations) {
                 p.sendMessage(ChatColor.GOLD + convert(loc));
             }
         } else {
@@ -263,11 +266,11 @@ public class Executor implements CommandExecutor, Listener {
         return array.toJSONString();
     }
 
-    private int c() {
-        if (c + 1 != loc.size()) {
-            return (c = c + 1);
+    private int moveCursor() {
+        if (cursor + 1 != locations.size()) {
+            return (cursor = cursor + 1);
         }
-        return (c = 0);
+        return (cursor = 0);
     }
 
 }
